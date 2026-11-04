@@ -108,6 +108,10 @@ kbd { font: 10px var(--mono); color: var(--mute); border: 1px solid var(--line);
 }
 .guide-kicker { font: 600 10px var(--mono); letter-spacing: .16em; color: var(--accent); margin: 0 0 6px; }
 .guide h3 { font: 600 17px/1.3 var(--sans); margin: 0 0 10px; letter-spacing: -.01em; }
+.guide-key { list-style: none; margin: 0 0 12px; padding: 10px 12px; display: grid; gap: 5px; background: var(--grid); }
+.guide-key li { display: flex; align-items: center; gap: 10px; }
+.guide-key .sw { width: 22px; }
+.sw.thick { height: 6px; background: var(--zero); }
 .guide ol { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 7px; color: var(--mute); }
 .guide ol b { color: var(--ink); font-weight: 600; }
 .guide-foot { font: 11px var(--mono); color: var(--mute); margin: 0 0 12px; }
@@ -195,7 +199,11 @@ td.t { color: var(--tension); } td.c { color: var(--compression); } td.bad { col
   .tag { display: none; }
   .legend { flex-wrap: wrap; gap: 10px; right: 66px; }
   .guide { right: 12px; left: 12px; top: auto; bottom: 12px; width: auto; padding: 14px 16px 12px; }
-  .guide ol { gap: 4px; }
+  .guide-key { list-style: none; margin: 0 0 12px; padding: 10px 12px; display: grid; gap: 5px; background: var(--grid); }
+.guide-key li { display: flex; align-items: center; gap: 10px; }
+.guide-key .sw { width: 22px; }
+.sw.thick { height: 6px; background: var(--zero); }
+.guide ol { gap: 4px; }
   .guide-foot { display: none; }
   .actions { flex-wrap: wrap; width: 100%; }
   .actions select { flex: 1; min-width: 0; }

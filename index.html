@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Truss Lab · interactive 2D truss solver</title>
-  <meta name="description" content="Draw a 2D truss and see member forces, stresses, deflection and factors of safety update live. Direct stiffness method, in the browser.">
+  <title>Truss Lab · see how a bridge carries weight</title>
+  <meta name="description" content="Build or pick a bridge, put weight on it, and see which parts are pulled, which are squeezed and which would break. Runs in your browser.">
   <meta name="theme-color" content="#0d1117">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 26h26M3 26l7-12 6 12 6-12 7 12M10 14h12' fill='none' stroke='%234cc2ff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
@@ -47,21 +47,26 @@
       </div>
       <div class="guide" id="guide" hidden role="dialog" aria-labelledby="guideTitle">
         <button class="guide-x" id="guideClose" aria-label="Close guide">×</button>
-        <p class="guide-kicker">QUICK START</p>
-        <h3 id="guideTitle">This bridge is already solved.</h3>
+        <p class="guide-kicker">WELCOME TO TRUSS LAB</p>
+        <h3 id="guideTitle">See how a bridge carries weight.</h3>
+        <ul class="guide-key">
+          <li><i class="sw t"></i><span><b>Blue</b> bars are being pulled</span></li>
+          <li><i class="sw c"></i><span><b>Red</b> bars are being squeezed</span></li>
+          <li><i class="sw thick"></i><span><b>Thicker</b> bars carry more force</span></li>
+        </ul>
         <ol>
-          <li><b>Drag any joint.</b> Every force, stress and deflection updates as you move it.</li>
-          <li><b><span class="only-mouse">Hover</span><span class="only-touch">Tap</span> a member</b> to read its force and safety factor. Blue is tension, red is compression, and thicker lines carry more load.</li>
-          <li><b>Build your own:</b> pick <kbd>J</kbd> Joint, <kbd>M</kbd> Member, <kbd>S</kbd> Support and <kbd>L</kbd> Load from the toolbar, or start from a preset.</li>
+          <li><b>Drag a white dot</b> and watch the forces change.</li>
+          <li><b><span class="only-mouse">Hover over</span><span class="only-touch">Tap</span> a bar</b> to see if it's safe. A safety factor below 1 means it would break.</li>
+          <li><b>Build your own</b> with the toolbar, or pick another shape from <i>Load preset</i>.</li>
         </ol>
-        <p class="guide-foot"><kbd>Ctrl Z</kbd> undo · <kbd>F</kbd> fit · <kbd>?</kbd> reopen this</p>
+        <p class="guide-foot"><kbd>Ctrl Z</kbd> undo · <kbd>?</kbd> show this again</p>
         <button class="guide-go" id="guideStart">Start exploring</button>
       </div>
       <div class="legend" aria-hidden="true">
-        <span><i class="sw t"></i>Tension</span>
-        <span><i class="sw c"></i>Compression</span>
-        <span><i class="sw z"></i>Zero force</span>
-        <label class="defl"><input type="checkbox" id="showDeformed" checked> Deformed shape ×<output id="deformScale">1</output></label>
+        <span><i class="sw t"></i>Pulled (tension)</span>
+        <span><i class="sw c"></i>Squeezed (compression)</span>
+        <span><i class="sw z"></i>No force</span>
+        <label class="defl"><input type="checkbox" id="showDeformed" checked> Bending ×<output id="deformScale">1</output></label>
       </div>
     </section>
 

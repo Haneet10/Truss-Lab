@@ -6,11 +6,11 @@ const SNAP = 0.5; // m
 const SUPPORT_CYCLE = ["none", "pin", "rollerY", "rollerX"];
 const SUPPORT_LABEL = { none: "Free", pin: "Pin", rollerY: "Roller (vertical reaction)", rollerX: "Roller (horizontal reaction)" };
 const HINTS = {
-  select: "Drag joints to move · drag empty space to pan · scroll to zoom · Del removes selection",
-  node: "Click to place a joint (snaps to 0.5 m)",
-  member: "Click two joints to connect them · click empty space to add and connect a joint · Esc to stop",
-  support: "Click a joint to cycle: free → pin → roller (vertical) → roller (horizontal)",
-  load: "Click a joint to add a 10 kN downward load · edit the value in the panel",
+  select: "Drag a dot to move it · click a bar to edit it · scroll to zoom",
+  node: "Click anywhere to place a dot",
+  member: "Click two dots to connect them with a bar · Esc to stop",
+  support: "Click a dot to fix it to the ground (click again to change the type)",
+  load: "Click a dot to add 10 kN of weight (about one tonne)",
 };
 
 const svg = document.getElementById("canvas");
