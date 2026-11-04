@@ -6,11 +6,11 @@ const SNAP = 0.5; // m
 const SUPPORT_CYCLE = ["none", "pin", "rollerY", "rollerX"];
 const SUPPORT_LABEL = { none: "Free", pin: "Pin", rollerY: "Roller (vertical reaction)", rollerX: "Roller (horizontal reaction)" };
 const HINTS = {
-  select: "Drag joints to move · drag empty space to pan · scroll to zoom · Del removes selection",
-  node: "Click to place a joint (snaps to 0.5 m)",
-  member: "Click two joints to connect them · click empty space to add and connect a joint · Esc to stop",
-  support: "Click a joint to cycle: free → pin → roller (vertical) → roller (horizontal)",
-  load: "Click a joint to add a 10 kN downward load · edit the value in the panel",
+  select: "Drag a dot to move it · click a bar to edit it · scroll to zoom",
+  node: "Click anywhere to place a dot",
+  member: "Click two dots to connect them with a bar · Esc to stop",
+  support: "Click a dot to fix it to the ground (click again to change the type)",
+  load: "Click a dot to add 10 kN of weight (about one tonne)",
 };
 
 const svg = document.getElementById("canvas");
@@ -58,6 +58,34 @@ function nodeAt(x, y, tolPx = 10) {
   return best;
 }
 
+/* ---------- history ---------- */
+
+const undoStack = [];
+const redoStack = [];
+const snapshot = () => JSON.stringify(state.model);
+
+function checkpoint() {
+  undoStack.push(snapshot());
+  if (undoStack.length > 200) undoStack.shift();
+  redoStack.length = 0;
+  syncHistoryButtons();
+}
+function restore(from, to) {
+  if (!from.length) return;
+  to.push(snapshot());
+  state.model = JSON.parse(from.pop());
+  state.selection = null;
+  state.pending = null;
+  inspectorKey = "";
+  update();
+}
+const undo = () => restore(undoStack, redoStack);
+const redo = () => restore(redoStack, undoStack);
+function syncHistoryButtons() {
+  $("undo").disabled = !undoStack.length;
+  $("redo").disabled = !redoStack.length;
+}
+
 /* ---------- model edits ---------- */
 
 function addNode(x, y) {
@@ -78,6 +106,7 @@ function addMember(a, b) {
 function deleteSelection() {
   const sel = state.selection;
   if (!sel) return;
+  checkpoint();
   const { model } = state;
   if (sel.type === "member") {
     model.members.splice(sel.index, 1);
@@ -213,8 +242,8 @@ function render() {
     const cls = res ? { tension: "t", compression: "c", zero: "z" }[res.state] : "n";
     const width = res ? 1.5 + 5 * (Math.abs(res.force) / maxF) : 2;
     const sel = state.selection?.type === "member" && state.selection.index === i;
-    el("line", { x1, y1, x2, y2, class: `member ${cls}${sel ? " sel" : ""}`, "stroke-width": width }, gm);
     el("line", { x1, y1, x2, y2, class: "member-hit", "data-member": i }, gm);
+    el("line", { x1, y1, x2, y2, class: `member ${cls}${sel ? " sel" : ""}`, "stroke-width": width }, gm);
     if (res && state.view.scale >= 40 && model.members.length <= 60 && Math.hypot(x2 - x1, y2 - y1) > 46) {
       const t = el("text", { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 5, "text-anchor": "middle", class: "force-label" }, labels);
       t.textContent = fmt(res.force, 1);
@@ -405,7 +434,12 @@ function renderInspector() {
   box.hidden = false;
   const body = $("inspectorBody");
   body.replaceChildren();
-  const live = (fn) => (v) => { fn(v); update({ panelOnly: false, keepInspector: true }); };
+  let saved = false;
+  const live = (fn) => (v) => {
+    if (!saved) { checkpoint(); saved = true; }
+    fn(v);
+    update();
+  };
 
   if (sel.type === "node") {
     const n = state.model.nodes[sel.index];
@@ -435,6 +469,7 @@ function renderInspector() {
     const all = document.createElement("button");
     all.textContent = "Apply to all members";
     all.addEventListener("click", () => {
+      checkpoint();
       state.model.members.forEach((o) => { o.material = m.material; o.area = m.area; });
       update();
     });
@@ -467,6 +502,7 @@ function select(sel) {
 
 function setTool(tool) {
   state.tool = tool;
+  svg.dataset.tool = tool;
   state.pending = null;
   document.querySelectorAll("[data-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tool === tool)));
   $("hint").textContent = HINTS[tool];
@@ -497,9 +533,76 @@ function saveToHash() {
   hashTimer = setTimeout(() => history.replaceState(null, "", `#t=${encodeModel(state.model)}`), 250);
 }
 
+/* ---------- hover readout ---------- */
+
+const tip = $("tip");
+function hideTip() {
+  tip.hidden = true;
+}
+function showTip(evt) {
+  const t = evt.target;
+  const { result, model } = state;
+  let lines = null;
+  if (t.dataset?.member !== undefined) {
+    const i = +t.dataset.member;
+    const m = model.members[i];
+    const r = result.ok ? result.members[i] : null;
+    lines = [`Member ${i + 1}  ·  joints ${m.a + 1}–${m.b + 1}`];
+    if (r) {
+      lines.push(
+        `${r.state === "zero" ? "Zero force" : `${fmt(Math.abs(r.force), 2)} kN ${r.state}`}`,
+        `σ = ${fmt(r.stress, 1)} MPa`,
+        `FoS ${fmtFos(r.fos)}${r.fos < Infinity ? ` (${r.fosBuckling < r.fosYield ? "buckling" : "yield"})` : ""}`
+      );
+    }
+  } else if (t.dataset?.node !== undefined) {
+    const i = +t.dataset.node;
+    const n = model.nodes[i];
+    lines = [`Joint ${i + 1}  ·  (${fmt(n.x, 1)}, ${fmt(n.y, 1)}) m`];
+    if (n.support !== "none") lines.push(SUPPORT_LABEL[n.support]);
+    if (n.fx || n.fy) lines.push(`Load ${fmt(n.fx, 1)}, ${fmt(n.fy, 1)} kN`);
+    if (result.ok) {
+      const u = result.displacements[i];
+      lines.push(`δ = ${fmt(Math.hypot(u.dx, u.dy) * 1000, 2)} mm`);
+      const rx = result.reactions.find((r) => r.node === i);
+      if (rx) lines.push(`R = ${fmt(rx.rx, 1)}, ${fmt(rx.ry, 1)} kN`);
+    }
+  }
+  if (!lines) return hideTip();
+  tip.replaceChildren(...lines.map((l, k) => {
+    const d = document.createElement("div");
+    d.textContent = l;
+    if (k === 0) d.className = "tip-title";
+    return d;
+  }));
+  const rect = svg.getBoundingClientRect();
+  tip.hidden = false;
+  const x = evt.clientX - rect.left + 14;
+  const y = evt.clientY - rect.top + 14;
+  tip.style.left = `${Math.min(x, rect.width - tip.offsetWidth - 8)}px`;
+  tip.style.top = `${Math.min(y, rect.height - tip.offsetHeight - 8)}px`;
+}
+
 /* ---------- input ---------- */
 
+const pointers = new Map();
+let pinch = null;
+function pinchState() {
+  const [a, b] = [...pointers.values()];
+  return { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+}
+
 svg.addEventListener("pointerdown", (evt) => {
+  const rect = svg.getBoundingClientRect();
+  pointers.set(evt.pointerId, { x: evt.clientX - rect.left, y: evt.clientY - rect.top });
+  if (pointers.size === 2) {
+    // second finger: switch to pinch-zoom and abandon any single-finger action
+    if (state.drag?.type === "node" && state.drag.moved) state.model = JSON.parse(state.drag.before);
+    state.drag = null;
+    pinch = { ...pinchState(), scale: state.view.scale, ox: state.view.ox, oy: state.view.oy };
+    hideTip();
+    return;
+  }
   if (evt.button === 1) {
     state.drag = { type: "pan", sx: evt.clientX, sy: evt.clientY, ox: state.view.ox, oy: state.view.oy };
     svg.setPointerCapture(evt.pointerId);
@@ -517,7 +620,7 @@ svg.addEventListener("pointerdown", (evt) => {
     case "select":
       if (hitNode >= 0) {
         state.selection = { type: "node", index: hitNode };
-        state.drag = { type: "node", index: hitNode };
+        state.drag = { type: "node", index: hitNode, before: snapshot(), moved: false };
       } else if (hitMember >= 0) {
         state.selection = { type: "member", index: hitMember };
       } else {
@@ -526,9 +629,11 @@ svg.addEventListener("pointerdown", (evt) => {
       }
       break;
     case "node":
+      if (hitNode < 0) checkpoint();
       state.selection = { type: "node", index: hitNode >= 0 ? hitNode : addNode(snap(wx), snap(wy)) };
       break;
     case "member": {
+      if (hitNode < 0 || (state.pending !== null && state.pending !== hitNode)) checkpoint();
       const idx = hitNode >= 0 ? hitNode : addNode(snap(wx), snap(wy));
       if (state.pending === null) state.pending = idx;
       else {
@@ -539,6 +644,7 @@ svg.addEventListener("pointerdown", (evt) => {
     }
     case "support":
       if (hitNode >= 0) {
+        checkpoint();
         const n = state.model.nodes[hitNode];
         n.support = SUPPORT_CYCLE[(SUPPORT_CYCLE.indexOf(n.support) + 1) % SUPPORT_CYCLE.length];
         state.selection = { type: "node", index: hitNode };
@@ -546,22 +652,39 @@ svg.addEventListener("pointerdown", (evt) => {
       break;
     case "load":
       if (hitNode >= 0) {
+        checkpoint();
         state.model.nodes[hitNode].fy -= 10;
         state.selection = { type: "node", index: hitNode };
       }
       break;
   }
   update();
+  if (evt.pointerType !== "mouse" && state.tool === "select" && !state.drag?.moved) showTip(evt);
 });
 
 svg.addEventListener("pointermove", (evt) => {
+  const rect = svg.getBoundingClientRect();
+  if (pointers.has(evt.pointerId)) pointers.set(evt.pointerId, { x: evt.clientX - rect.left, y: evt.clientY - rect.top });
+  if (pinch && pointers.size === 2) {
+    const now = pinchState();
+    const k = Math.min(Math.max((pinch.scale * now.dist) / pinch.dist, 8), 400) / pinch.scale;
+    state.view.scale = pinch.scale * k;
+    state.view.ox = now.cx - (pinch.cx - pinch.ox) * k;
+    state.view.oy = now.cy - (pinch.cy - pinch.oy) * k;
+    render();
+    return;
+  }
   const [wx, wy] = pointerWorld(evt);
+  if (!state.drag) showTip(evt);
+  else hideTip();
+  if (state.drag) svg.classList.add("dragging");
   state.hover = [wx, wy];
   const d = state.drag;
   if (d?.type === "node") {
     const n = state.model.nodes[d.index];
     const [nx, ny] = [snap(wx), snap(wy)];
     if (nx !== n.x || ny !== n.y) {
+      d.moved = true;
       n.x = nx;
       n.y = ny;
       inspectorKey = "";
@@ -576,9 +699,23 @@ svg.addEventListener("pointermove", (evt) => {
   if (d?.type === "pan" || state.tool === "member" || state.tool === "node") render();
 });
 
-svg.addEventListener("pointerup", () => (state.drag = null));
-svg.addEventListener("pointerleave", () => {
+function endPointer(evt) {
+  pointers.delete(evt.pointerId);
+  if (pointers.size < 2) pinch = null;
+  const d = state.drag;
+  if (d?.type === "node" && d.moved) {
+    undoStack.push(d.before);
+    redoStack.length = 0;
+    syncHistoryButtons();
+  }
+  state.drag = null;
+  svg.classList.remove("dragging");
+}
+svg.addEventListener("pointerup", endPointer);
+svg.addEventListener("pointercancel", endPointer);
+svg.addEventListener("pointerleave", (evt) => {
   state.hover = null;
+  if (evt.pointerType === "mouse") hideTip();
   if (!state.drag) render();
 });
 
@@ -601,7 +738,18 @@ svg.addEventListener(
 
 const KEY_TOOLS = { v: "select", j: "node", m: "member", s: "support", l: "load" };
 document.addEventListener("keydown", (evt) => {
-  if (evt.target.matches?.("input, select, textarea") || evt.metaKey || evt.ctrlKey || evt.altKey) return;
+  if (evt.target.matches?.("input, select, textarea")) return;
+  if ((evt.metaKey || evt.ctrlKey) && evt.key.toLowerCase() === "z") {
+    evt.preventDefault();
+    evt.shiftKey ? redo() : undo();
+    return;
+  }
+  if ((evt.metaKey || evt.ctrlKey) && evt.key.toLowerCase() === "y") {
+    evt.preventDefault();
+    redo();
+    return;
+  }
+  if (evt.metaKey || evt.ctrlKey || evt.altKey) return;
   const k = evt.key.toLowerCase();
   if (KEY_TOOLS[k]) setTool(KEY_TOOLS[k]);
   else if (k === "escape") {
@@ -611,6 +759,8 @@ document.addEventListener("keydown", (evt) => {
   } else if (k === "delete" || k === "backspace") {
     evt.preventDefault();
     deleteSelection();
+  } else if (k === "?") {
+    toggleGuide(true);
   } else if (k === "f") {
     fitView();
     render();
@@ -624,6 +774,7 @@ presetSel.add(new Option("Load preset…", "", true, true));
 for (const [k, p] of Object.entries(PRESETS)) presetSel.add(new Option(p.label, k));
 presetSel.addEventListener("change", () => {
   if (!presetSel.value) return;
+  checkpoint();
   loadModel(buildPreset(presetSel.value));
   presetSel.value = "";
 });
@@ -655,6 +806,36 @@ $("export").addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 });
 
+$("undo").addEventListener("click", undo);
+$("redo").addEventListener("click", redo);
+function zoomBy(f) {
+  const r = svg.getBoundingClientRect();
+  const [wx, wy] = toWorld(r.width / 2, r.height / 2);
+  state.view.scale = Math.min(Math.max(state.view.scale * f, 8), 400);
+  state.view.ox = r.width / 2 - wx * state.view.scale;
+  state.view.oy = r.height / 2 + wy * state.view.scale;
+  render();
+}
+$("zoomIn").addEventListener("click", () => zoomBy(1.25));
+$("zoomOut").addEventListener("click", () => zoomBy(0.8));
+$("fit").addEventListener("click", () => { fitView(); render(); });
+
+function toggleGuide(show) {
+  $("guide").hidden = !show;
+  if (!show) {
+    try { localStorage.setItem("truss-guide-seen", "1"); } catch {}
+    svg.focus();
+  }
+}
+$("guideClose").addEventListener("click", () => toggleGuide(false));
+$("guideStart").addEventListener("click", () => toggleGuide(false));
+$("help").addEventListener("click", () => toggleGuide($("guide").hidden));
+try {
+  if (!localStorage.getItem("truss-guide-seen")) toggleGuide(true);
+} catch {
+  toggleGuide(true);
+}
+
 const root = document.documentElement;
 try {
   const saved = localStorage.getItem("truss-theme");
@@ -684,4 +865,5 @@ if (m) {
   try { initial = decodeModel(m[1]); } catch { initial = null; }
 }
 setTool("select");
+syncHistoryButtons();
 loadModel(initial ?? buildPreset("pratt"));

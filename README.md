@@ -4,37 +4,58 @@
 ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**Draw a 2D truss in the browser and watch member forces, stresses, deflection and factors of safety update as you drag.**
+**See how a bridge carries weight.** Build or pick a bridge, put weight on it, and Truss Lab shows you which parts are being pulled, which are being squeezed, and which ones would break.
 
-**[Open the live app →](https://haneet10.github.io/Truss-Lab/)**
+**[▶ Open the app](https://haneet10.github.io/Truss-Lab/)** (it runs in your browser, with nothing to install)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
-  <img alt="Truss Lab solving a six-panel Pratt bridge: members coloured by tension and compression, deformed shape overlaid, member force table on the right" src="docs/screenshot-light.png">
+  <img alt="A bridge in Truss Lab: blue bars are being pulled, red bars are being squeezed" src="docs/screenshot-light.png">
 </picture>
 
-## What it does
+## What is this?
 
-- **Live solve.** Every edit re-solves the structure with the direct stiffness method, fast enough to run on each mouse move.
-- **Reads like a hand sketch.** Members are coloured by tension or compression with line weight proportional to force. Loads, support reactions and an exaggerated deformed shape are drawn on the sheet.
-- **Design checks.** Each member gets axial stress, a yield factor of safety and an Euler buckling factor of safety. The governing one is reported, so you can see why a member fails.
-- **Stability diagnostics.** The app shows Maxwell's count `m + r − 2j`. If the stiffness matrix is singular, it names the joint that can move freely, so you know where the mechanism is.
-- **Presets.** Pratt, Howe and Warren bridges, a Fink-style roof and a wall-mounted cantilever bracket.
-- **Shareable.** The whole truss is encoded in the URL, so a link reproduces it exactly. You can also export the model and its results as JSON.
-- **Zero dependencies.** Plain ES modules with no build step and no framework.
+A **truss** is a frame made of straight bars joined in triangles. You see them in bridges, roofs, cranes and towers. When weight sits on a truss, every bar is either **pulled** (tension) or **squeezed** (compression). Engineers have to work out how hard each bar is working to make sure none of them snap or buckle.
 
-## Using it
+Normally that means pages of hand calculations. Truss Lab does it instantly and draws the answer on the bridge:
 
-| Tool | Key | Action |
-|---|---|---|
-| Select | `V` | Drag joints, drag empty space to pan, scroll to zoom, `Del` deletes |
-| Joint | `J` | Click to place a joint (snaps to a 0.5 m grid) |
-| Member | `M` | Click joint → joint to connect; click empty space to add and connect in one go; `Esc` stops |
-| Support | `S` | Click a joint to cycle free → pin → roller (vertical) → roller (horizontal) |
-| Load | `L` | Click a joint to add 10 kN down, then edit Fx / Fy in the panel |
-| Fit | `F` | Fit the drawing to the screen |
+| On screen | What it means |
+|---|---|
+| **Blue bar** | Being pulled |
+| **Red bar** | Being squeezed |
+| **Thicker bar** | Carrying more force |
+| **Dashed outline** | How the bridge bends (exaggerated so you can see it) |
+| **Safety factor** | How many times stronger the bar is than it needs to be. Above 1 is safe, below 1 means it would fail. |
 
-Click any member, or its row in the table, to change its material (A36 steel, 6061-T6 aluminium, Ti-6Al-4V, Douglas fir) or its cross-sectional area.
+## How to use it
+
+1. **Open the app.** A bridge is already loaded and solved.
+2. **Drag any joint** (the white dots). The colours and numbers update as you move it.
+3. **Hover over a bar** (or tap it on a phone) to see how much force it carries and whether it's safe.
+4. **Try a different shape** from the *Load preset* menu, or build your own with the toolbar:
+
+| Button | What it does |
+|---|---|
+| **Joint** (`J`) | Click to place a dot |
+| **Member** (`M`) | Click two dots to connect them with a bar |
+| **Support** (`S`) | Click a dot to fix it to the ground |
+| **Load** (`L`) | Click a dot to hang 10 kN of weight on it (about one tonne) |
+| **Select** (`V`) | Move dots, or click a bar to change its material and thickness |
+
+Made a mess? Press `Ctrl Z` to undo. Press **Share** to copy a link to your design.
+
+If the app says the structure is a **mechanism**, part of it can flop around freely. Add a bar or a support to brace it.
+
+---
+
+## For engineers
+
+- **Analysis:** linear-elastic direct stiffness method with pin-jointed members. It re-solves on every edit.
+- **Checks:** axial stress, factor of safety against yield, and Euler buckling (pinned ends, solid round section). The lower of the two is reported.
+- **Stability:** Maxwell's count `m + r − 2j`, plus detection of a singular stiffness matrix that names the joint that's free to move.
+- **Materials:** A36 steel, 6061-T6 aluminium, Ti-6Al-4V and Douglas fir, with per-member cross-sectional area.
+- **Presets:** Pratt, Howe and Warren bridges, a Fink roof and a cantilever bracket.
+- **No dependencies:** plain ES modules with no build step. The model is encoded in the URL, and you can export it as JSON.
 
 ## How the solver works
 

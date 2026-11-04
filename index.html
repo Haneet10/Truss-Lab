@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Truss Lab · interactive 2D truss solver</title>
-  <meta name="description" content="Draw a 2D truss and see member forces, stresses, deflection and factors of safety update live. Direct stiffness method, in the browser.">
+  <title>Truss Lab · see how a bridge carries weight</title>
+  <meta name="description" content="Build or pick a bridge, put weight on it, and see which parts are pulled, which are squeezed and which would break. Runs in your browser.">
   <meta name="theme-color" content="#0d1117">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 26h26M3 26l7-12 6 12 6-12 7 12M10 14h12' fill='none' stroke='%234cc2ff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
@@ -24,10 +24,13 @@
       <button data-tool="load" title="Add 10 kN load (L)"><kbd>L</kbd>Load</button>
     </nav>
     <div class="actions">
+      <button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5 3 2 6l3 3M2.5 6H10a4 4 0 0 1 0 8H7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m11 3 3 3-3 3M13.5 6H6a4 4 0 0 0 0 8h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <label class="sr-only" for="preset">Preset</label>
       <select id="preset" title="Load a starter truss"></select>
       <button id="share" title="Copy a link to this truss">Share</button>
       <button id="export" title="Download as JSON">Export</button>
+      <button id="help" title="How to use (?)" aria-label="How to use">?</button>
       <button id="theme" title="Toggle light/dark" aria-label="Toggle theme"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
     </div>
   </header>
@@ -36,11 +39,34 @@
     <section class="sheet" aria-label="Drawing area">
       <svg id="canvas" tabindex="0" aria-label="Truss drawing. Use the tools above to add joints and members."></svg>
       <div class="hint" id="hint"></div>
+      <div class="tip" id="tip" hidden role="status"></div>
+      <div class="zoom" role="group" aria-label="View">
+        <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="fit" title="Fit to screen (F)" aria-label="Fit to screen"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      </div>
+      <div class="guide" id="guide" hidden role="dialog" aria-labelledby="guideTitle">
+        <button class="guide-x" id="guideClose" aria-label="Close guide">×</button>
+        <p class="guide-kicker">WELCOME TO TRUSS LAB</p>
+        <h3 id="guideTitle">See how a bridge carries weight.</h3>
+        <ul class="guide-key">
+          <li><i class="sw t"></i><span><b>Blue</b> bars are being pulled</span></li>
+          <li><i class="sw c"></i><span><b>Red</b> bars are being squeezed</span></li>
+          <li><i class="sw thick"></i><span><b>Thicker</b> bars carry more force</span></li>
+        </ul>
+        <ol>
+          <li><b>Drag a white dot</b> and watch the forces change.</li>
+          <li><b><span class="only-mouse">Hover over</span><span class="only-touch">Tap</span> a bar</b> to see if it's safe. A safety factor below 1 means it would break.</li>
+          <li><b>Build your own</b> with the toolbar, or pick another shape from <i>Load preset</i>.</li>
+        </ol>
+        <p class="guide-foot"><kbd>Ctrl Z</kbd> undo · <kbd>?</kbd> show this again</p>
+        <button class="guide-go" id="guideStart">Start exploring</button>
+      </div>
       <div class="legend" aria-hidden="true">
-        <span><i class="sw t"></i>Tension</span>
-        <span><i class="sw c"></i>Compression</span>
-        <span><i class="sw z"></i>Zero force</span>
-        <label class="defl"><input type="checkbox" id="showDeformed" checked> Deformed shape ×<output id="deformScale">1</output></label>
+        <span><i class="sw t"></i>Pulled (tension)</span>
+        <span><i class="sw c"></i>Squeezed (compression)</span>
+        <span><i class="sw z"></i>No force</span>
+        <label class="defl"><input type="checkbox" id="showDeformed" checked> Bending ×<output id="deformScale">1</output></label>
       </div>
     </section>
 
