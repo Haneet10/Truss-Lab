@@ -1,0 +1,13 @@
+{
+  "name": "truss-lab",
+  "version": "1.0.0",
+  "description": "Interactive 2D truss solver in the browser, built on the direct stiffness method",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "npx --yes serve@14.2.4 ."
+  },
+  "author": "Haneet Singh",
+  "license": "MIT"
+}

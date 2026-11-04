@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Truss Lab · interactive 2D truss solver</title>
+  <meta name="description" content="Draw a 2D truss and see member forces, stresses, deflection and factors of safety update live. Direct stiffness method, in the browser.">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 26h26M3 26l7-12 6 12 6-12 7 12M10 14h12' fill='none' stroke='%234cc2ff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26h26M3 26l7-12 6 12 6-12 7 12M10 14h12"/></svg>
+      <span>Truss Lab</span>
+      <span class="tag">DWG TL-01</span>
+    </div>
+    <nav class="tools" role="toolbar" aria-label="Editing tools">
+      <button data-tool="select" title="Select and move (V)"><kbd>V</kbd>Select</button>
+      <button data-tool="node" title="Add joint (J)"><kbd>J</kbd>Joint</button>
+      <button data-tool="member" title="Add member between two joints (M)"><kbd>M</kbd>Member</button>
+      <button data-tool="support" title="Cycle support type (S)"><kbd>S</kbd>Support</button>
+      <button data-tool="load" title="Add 10 kN load (L)"><kbd>L</kbd>Load</button>
+    </nav>
+    <div class="actions">
+      <label class="sr-only" for="preset">Preset</label>
+      <select id="preset" title="Load a starter truss"></select>
+      <button id="share" title="Copy a link to this truss">Share</button>
+      <button id="export" title="Download as JSON">Export</button>
+      <button id="theme" title="Toggle light/dark" aria-label="Toggle theme"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="sheet" aria-label="Drawing area">
+      <svg id="canvas" tabindex="0" aria-label="Truss drawing. Use the tools above to add joints and members."></svg>
+      <div class="hint" id="hint"></div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw t"></i>Tension</span>
+        <span><i class="sw c"></i>Compression</span>
+        <span><i class="sw z"></i>Zero force</span>
+        <label class="defl"><input type="checkbox" id="showDeformed" checked> Deformed shape ×<output id="deformScale">1</output></label>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <section class="status" id="status" aria-live="polite"></section>
+
+      <section>
+        <h2>Summary</h2>
+        <dl class="kv" id="summary"></dl>
+      </section>
+
+      <section id="inspector" hidden>
+        <h2 id="inspectorTitle">Selection</h2>
+        <div id="inspectorBody" class="form"></div>
+      </section>
+
+      <section>
+        <h2>Member forces</h2>
+        <div class="table-wrap">
+          <table id="members">
+            <thead><tr><th>#</th><th>L (m)</th><th>N (kN)</th><th>σ (MPa)</th><th>FoS</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Reactions</h2>
+        <table id="reactions">
+          <thead><tr><th>Joint</th><th>Rx (kN)</th><th>Ry (kN)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <footer class="foot">
+        Direct stiffness method · pin-jointed members · linear elastic, small displacements.
+        Buckling: Euler, pinned ends, solid round section.
+        <a href="https://github.com/Haneet10/Truss-Lab">Source</a>
+      </footer>
+    </aside>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
