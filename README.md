@@ -32,9 +32,11 @@
 | Member | `M` | Click joint → joint to connect; click empty space to add and connect in one go; `Esc` stops |
 | Support | `S` | Click a joint to cycle free → pin → roller (vertical) → roller (horizontal) |
 | Load | `L` | Click a joint to add 10 kN down, then edit Fx / Fy in the panel |
-| Fit | `F` | Fit the drawing to the screen |
+| Fit | `F` | Fit the drawing to the screen (also the ⛶ button) |
+| Undo / redo | `Ctrl Z` / `Ctrl Shift Z` | Every edit, including joint drags, can be undone |
+| Help | `?` | Reopen the quick-start guide |
 
-Click any member, or its row in the table, to change its material (A36 steel, 6061-T6 aluminium, Ti-6Al-4V, Douglas fir) or its cross-sectional area.
+Hover a member or joint (tap on a phone) for a readout of its force, stress, factor of safety, deflection or reaction. On touch screens you can pinch to zoom and drag to pan. Click any member, or its row in the table, to change its material (A36 steel, 6061-T6 aluminium, Ti-6Al-4V, Douglas fir) or its cross-sectional area.
 
 ## How the solver works
 

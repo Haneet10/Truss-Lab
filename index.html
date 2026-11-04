@@ -24,10 +24,13 @@
       <button data-tool="load" title="Add 10 kN load (L)"><kbd>L</kbd>Load</button>
     </nav>
     <div class="actions">
+      <button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5 3 2 6l3 3M2.5 6H10a4 4 0 0 1 0 8H7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m11 3 3 3-3 3M13.5 6H6a4 4 0 0 0 0 8h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <label class="sr-only" for="preset">Preset</label>
       <select id="preset" title="Load a starter truss"></select>
       <button id="share" title="Copy a link to this truss">Share</button>
       <button id="export" title="Download as JSON">Export</button>
+      <button id="help" title="How to use (?)" aria-label="How to use">?</button>
       <button id="theme" title="Toggle light/dark" aria-label="Toggle theme"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
     </div>
   </header>
@@ -36,6 +39,24 @@
     <section class="sheet" aria-label="Drawing area">
       <svg id="canvas" tabindex="0" aria-label="Truss drawing. Use the tools above to add joints and members."></svg>
       <div class="hint" id="hint"></div>
+      <div class="tip" id="tip" hidden role="status"></div>
+      <div class="zoom" role="group" aria-label="View">
+        <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="fit" title="Fit to screen (F)" aria-label="Fit to screen"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      </div>
+      <div class="guide" id="guide" hidden role="dialog" aria-labelledby="guideTitle">
+        <button class="guide-x" id="guideClose" aria-label="Close guide">×</button>
+        <p class="guide-kicker">QUICK START</p>
+        <h3 id="guideTitle">This bridge is already solved.</h3>
+        <ol>
+          <li><b>Drag any joint.</b> Every force, stress and deflection updates as you move it.</li>
+          <li><b><span class="only-mouse">Hover</span><span class="only-touch">Tap</span> a member</b> to read its force and safety factor. Blue is tension, red is compression, and thicker lines carry more load.</li>
+          <li><b>Build your own:</b> pick <kbd>J</kbd> Joint, <kbd>M</kbd> Member, <kbd>S</kbd> Support and <kbd>L</kbd> Load from the toolbar, or start from a preset.</li>
+        </ol>
+        <p class="guide-foot"><kbd>Ctrl Z</kbd> undo · <kbd>F</kbd> fit · <kbd>?</kbd> reopen this</p>
+        <button class="guide-go" id="guideStart">Start exploring</button>
+      </div>
       <div class="legend" aria-hidden="true">
         <span><i class="sw t"></i>Tension</span>
         <span><i class="sw c"></i>Compression</span>
